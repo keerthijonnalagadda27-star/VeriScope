@@ -1,9 +1,10 @@
-from fastapi import APIRouter,HTTPException,status
+from fastapi import APIRouter,HTTPException,status,UploadFile,File
 from pydantic import BaseModel
 
 from services.ml_service import predict
 from services.llm_service import explain
 from services.scraper import scrape_article
+from services.ocr_service import extract_text_from_image
 
 class TextRequest(BaseModel):
     text:str
@@ -65,3 +66,32 @@ def verify_url(request:URLRequest):
 
 
 
+@router.post("/image")
+async def verify_image(file:UploadFile=File(...)):
+    #async because file.read() need to read kadha so little to wait
+
+    image_bytes=await file.read()
+    ocr_result=extract_text_from_image(image_bytes)
+
+    if not ocr_result["success"]:
+        raise HTTPException(status_code=400,detail=ocr_result["error"])
+    
+    ml_result=predict(ocr_result["text"])
+    llm_result=explain(ocr_result["text"],ml_result["verdict"],ml_result["confidence"])
+
+    return{
+        "input_type":"image",
+        "extracted_text":ocr_result["text"],
+        "verdict":ml_result["verdict"],
+        "confidence":ml_result["confidence"],
+        "fake_probability": ml_result["fake_probability"],
+        "real_probability": ml_result["real_probability"],
+        "explanation": llm_result["explanation"],
+        "red_flags": llm_result["red_flags"],
+        "recommendation": llm_result["recommendation"]
+
+    }
+    
+
+
+    
