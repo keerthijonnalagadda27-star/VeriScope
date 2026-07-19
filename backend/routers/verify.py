@@ -1,10 +1,12 @@
-from fastapi import APIRouter,HTTPException,status,UploadFile,File
+from fastapi import APIRouter,HTTPException,status,UploadFile,File,Depends
 from pydantic import BaseModel
 
+from routers.auth import get_current_user
 from services.ml_service import predict
 from services.llm_service import explain
 from services.scraper import scrape_article
 from services.ocr_service import extract_text_from_image
+from services.dna_service import get_source_dna
 
 class TextRequest(BaseModel):
     text:str
@@ -16,7 +18,7 @@ router=APIRouter(
 )
 
 @router.post("/text")
-def verify_text(request:TextRequest):
+def verify_text(request:TextRequest,current_user=Depends(get_current_user)):
     if len(request.text.strip())<50:
         raise HTTPException(status_code=400,detail="Text too short to analyze-minimum 50 characters")
     ml_result=predict(request.text)
@@ -40,7 +42,7 @@ class URLRequest(BaseModel):
     url:str
 
 @router.post("/url")
-def verify_url(request:URLRequest):
+def verify_url(request:URLRequest,current_user=Depends(get_current_user)):
     scraped=scrape_article(request.url)
     if not scraped["success"]:
         raise HTTPException(status_code=400,detail=scraped['error'])
@@ -67,7 +69,7 @@ def verify_url(request:URLRequest):
 
 
 @router.post("/image")
-async def verify_image(file:UploadFile=File(...)):
+async def verify_image(file:UploadFile=File(...),current_user=Depends(get_current_user)):
     #async because file.read() need to read kadha so little to wait
 
     image_bytes=await file.read()
@@ -93,5 +95,7 @@ async def verify_image(file:UploadFile=File(...)):
     }
     
 
-
-    
+@router.post("/dna")
+def trace_dna(request:TextRequest):
+    result=get_source_dna(request.text)
+    return  result

@@ -26,7 +26,7 @@ def scrape_article(url:str)->dict:
 
         paragraphs=soup.find_all('p')
 
-        body=''.join([p.get_text(strip=True) for p in paragraphs])
+        body=' '.join([p.get_text(strip=True) for p in paragraphs])
         #vachina paragraphs anni with space b/w them ichi join chestundi as a list
 
         full_text=f"{title} {body}"
@@ -47,7 +47,8 @@ def scrape_article(url:str)->dict:
             "domain":"",
             "success":False,
             "error":str(e)
-        }
+        } 
+    
 
 
 

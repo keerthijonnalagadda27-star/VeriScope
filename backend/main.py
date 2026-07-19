@@ -1,7 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from routers import auth
 from routers import verify
+from database import Base,engine
+
+Base.metadata.create_all(bind=engine)
+
+#ee line endukante..it creates all tables in database if okkati kuda lekapothe yet..ee line lekapothe signup endpoint crashes- no users table
+
+
+
 app=FastAPI(
     title="VeriScope",
     description="AI-Powered Fake News Detector",
@@ -16,6 +24,8 @@ app.add_middleware(CORSMiddleware,
     allow_headers=["*"]
 )
 
+
+app.include_router(auth.router)
 app.include_router(verify.router)
 @app.get("/")
 def home():
@@ -24,3 +34,7 @@ def home():
         "message":"AI-Powered Fake News Detector",
         "status":"running"
     }
+
+
+
+
